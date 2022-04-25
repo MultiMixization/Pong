@@ -42,7 +42,7 @@ extern "C" {
 /** @defgroup LTDC_Exported_Types LTDC Exported Types
   * @{
   */
-#define MAX_LAYER  2U
+#define MAX_LAYER  4U
 
 /**
   * @brief  LTDC color structure definition

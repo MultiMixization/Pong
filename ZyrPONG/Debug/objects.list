@@ -7,6 +7,8 @@
 "./Core/Src/sysmem.o"
 "./Core/Src/system_stm32f4xx.o"
 "./Core/Startup/startup_stm32f429zitx.o"
+"./Drivers/BSP/Components/ili9341.o"
+"./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery.o"
 "./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.o"
 "./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.o"
 "./Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_crc.o"

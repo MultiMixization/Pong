@@ -24,6 +24,8 @@
 /* USER CODE BEGIN Includes */
 
 #include "stdio.h"
+#include "Icons.h"
+#include "5x5_font.h"
 
 /* USER CODE END Includes */
 
@@ -61,6 +63,13 @@ SDRAM_HandleTypeDef hsdram1;
 osThreadId defaultTaskHandle;
 /* USER CODE BEGIN PV */
 
+LTDC_HandleTypeDef LtdcHandle;
+LTDC_LayerCfgTypeDef pLayerCfg_Player1;	//Poziom paletki gracza 1
+LTDC_LayerCfgTypeDef pLayerCfg_Player2;	//Poziom paletki gracza 2
+LTDC_LayerCfgTypeDef pLayerCfg_Ball;	//Poziom piłki
+LTDC_LayerCfgTypeDef pLayerCfg_Interface;	//Poziom interfejsu
+__IO uint32_t ReloadFlag = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -69,14 +78,20 @@ static void MX_GPIO_Init(void);
 static void MX_CRC_Init(void);
 static void MX_DMA2D_Init(void);
 static void MX_FMC_Init(void);
-static void MX_I2C3_Init(void);
 static void MX_LTDC_Init(void);
 static void MX_SPI5_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_USART1_UART_Init(void);
+static void MX_I2C3_Init(void);
 void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
+
+void ili9341_Init(void);
+static void LCD_Config(void);
+HAL_StatusTypeDef LayerPositionAbsolute(LTDC_HandleTypeDef *hltdc, uint32_t newX, uint32_t newY, uint32_t LayerIdx);
+HAL_StatusTypeDef LayerPositionRelative(LTDC_HandleTypeDef *hltdc, uint32_t X, uint32_t Y, uint32_t LayerIdx);
+void Test(void);
 
 /* USER CODE END PFP */
 
@@ -116,12 +131,14 @@ int main(void)
   MX_CRC_Init();
   MX_DMA2D_Init();
   MX_FMC_Init();
-  MX_I2C3_Init();
   MX_LTDC_Init();
   MX_SPI5_Init();
   MX_TIM1_Init();
   MX_USART1_UART_Init();
+  MX_I2C3_Init();
   /* USER CODE BEGIN 2 */
+
+  LCD_Config();
 
   /* USER CODE END 2 */
 
@@ -159,7 +176,6 @@ int main(void)
   while (1)
   {
 
-	  printf("DUpa");
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -179,7 +195,7 @@ void SystemClock_Config(void)
   /** Configure the main internal regulator output voltage
   */
   __HAL_RCC_PWR_CLK_ENABLE();
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE3);
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
@@ -190,10 +206,17 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
   RCC_OscInitStruct.PLL.PLLM = 8;
-  RCC_OscInitStruct.PLL.PLLN = 72;
+  RCC_OscInitStruct.PLL.PLLN = 180;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 3;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Activate the Over-Drive mode
+  */
+  if (HAL_PWREx_EnableOverDrive() != HAL_OK)
   {
     Error_Handler();
   }
@@ -204,10 +227,10 @@ void SystemClock_Config(void)
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
   {
     Error_Handler();
   }
@@ -409,7 +432,7 @@ static void MX_SPI5_Init(void)
   hspi5.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi5.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi5.Init.NSS = SPI_NSS_SOFT;
-  hspi5.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
+  hspi5.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
   hspi5.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi5.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi5.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -651,10 +674,260 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+void test(void)
+{
+	while(1)
+	{
+		  LayerPositionRelative(&LtdcHandle, 50 , 0, 0);
+		  HAL_Delay(1000);
+		  LayerPositionRelative(&LtdcHandle, 0 ,50, 0);
+		  HAL_Delay(1000);
+		  LayerPositionRelative(&LtdcHandle, -50 ,0, 0);
+		  HAL_Delay(1000);
+		  LayerPositionRelative(&LtdcHandle, 0 ,-50, 0);
+		  HAL_Delay(1000);
+	}
+}
+
 int _write(int file, char *ptr, int len)
 {
-	HAL_UART_Transmit(&huart1, ptr, len, 50);
+	HAL_UART_Transmit(&huart1, (uint8_t *)ptr, len, HAL_MAX_DELAY);
 	return len;
+}
+
+
+HAL_StatusTypeDef LayerPositionAbsolute(LTDC_HandleTypeDef *hltdc, uint32_t newX, uint32_t newY, uint32_t LayerIdx)
+{
+	  return HAL_LTDC_SetWindowPosition(&LtdcHandle, newX, newY, LayerIdx);
+}
+
+HAL_StatusTypeDef LayerPositionRelative(LTDC_HandleTypeDef *hltdc, uint32_t X, uint32_t Y, uint32_t LayerIdx)
+{
+	  LTDC_LayerCfgTypeDef *pLayerCfg;
+
+	  /* Get layer configuration from handle structure */
+	  pLayerCfg = &hltdc->LayerCfg[LayerIdx];
+
+	  return HAL_LTDC_SetWindowPosition(&LtdcHandle, pLayerCfg->WindowX0 + X, pLayerCfg->WindowY0 + Y, LayerIdx);
+}
+
+void HAL_LTDC_ReloadEventCallback(LTDC_HandleTypeDef *hltdc)
+{
+  ReloadFlag = 1;
+}
+
+static void LCD_Config(void)
+{
+  /* Initialization of ILI9341 component*/
+  ili9341_Init();
+
+/* LTDC Initialization -------------------------------------------------------*/
+
+  /* Polarity configuration */
+  /* Initialize the horizontal synchronization polarity as active low */
+  LtdcHandle.Init.HSPolarity = LTDC_HSPOLARITY_AL;
+  /* Initialize the vertical synchronization polarity as active low */
+  LtdcHandle.Init.VSPolarity = LTDC_VSPOLARITY_AL;
+  /* Initialize the data enable polarity as active low */
+  LtdcHandle.Init.DEPolarity = LTDC_DEPOLARITY_AL;
+  /* Initialize the pixel clock polarity as input pixel clock */
+  LtdcHandle.Init.PCPolarity = LTDC_PCPOLARITY_IPC;
+
+  /* Timing configuration  (Typical configuration from ILI9341 datasheet)
+      HSYNC=10 (9+1)
+      HBP=20 (29-10+1)
+      ActiveW=240 (269-20-10+1)
+      HFP=10 (279-240-20-10+1)
+
+      VSYNC=2 (1+1)
+      VBP=2 (3-2+1)
+      ActiveH=320 (323-2-2+1)
+      VFP=4 (327-320-2-2+1)
+  */
+
+  /* Timing configuration */
+  /* Horizontal synchronization width = Hsync - 1 */
+  LtdcHandle.Init.HorizontalSync = 9;
+  /* Vertical synchronization height = Vsync - 1 */
+  LtdcHandle.Init.VerticalSync = 1;
+  /* Accumulated horizontal back porch = Hsync + HBP - 1 */
+  LtdcHandle.Init.AccumulatedHBP = 29;
+  /* Accumulated vertical back porch = Vsync + VBP - 1 */
+  LtdcHandle.Init.AccumulatedVBP = 3;
+  /* Accumulated active width = Hsync + HBP + Active Width - 1 */
+  LtdcHandle.Init.AccumulatedActiveH = 323;
+  /* Accumulated active height = Vsync + VBP + Active Height - 1 */
+  LtdcHandle.Init.AccumulatedActiveW = 269;
+  /* Total height = Vsync + VBP + Active Height + VFP - 1 */
+  LtdcHandle.Init.TotalHeigh = 327;
+  /* Total width = Hsync + HBP + Active Width + HFP - 1 */
+  LtdcHandle.Init.TotalWidth = 279;
+
+  /* Configure R,G,B component values for LCD background color */
+  LtdcHandle.Init.Backcolor.Blue = 0;
+  LtdcHandle.Init.Backcolor.Green = 0;
+  LtdcHandle.Init.Backcolor.Red = 0;
+
+  LtdcHandle.Instance = LTDC;
+
+/* Player 1 Configuration ------------------------------------------------------*/
+
+  /* Windowing configuration */
+  pLayerCfg_Player1.WindowX0 = 10;
+  pLayerCfg_Player1.WindowX1 = 19;
+  pLayerCfg_Player1.WindowY0 = 10;
+  pLayerCfg_Player1.WindowY1 = 19;
+
+  /* Pixel Format configuration*/
+  pLayerCfg_Player1.PixelFormat = LTDC_PIXEL_FORMAT_RGB565;
+
+  /* Start Address configuration : frame buffer is located at FLASH memory */
+  pLayerCfg_Player1.FBStartAdress = (uint32_t)&Ball;
+
+  /* Alpha constant (255 totally opaque) */
+  pLayerCfg_Player1.Alpha = 255;
+
+  /* Default Color configuration (configure A,R,G,B component values) */
+  pLayerCfg_Player1.Alpha0 = 0;
+  pLayerCfg_Player1.Backcolor.Blue = 0;
+  pLayerCfg_Player1.Backcolor.Green = 0;
+  pLayerCfg_Player1.Backcolor.Red = 0;
+
+  /* Configure blending factors */
+  pLayerCfg_Player1.BlendingFactor1 = LTDC_BLENDING_FACTOR1_PAxCA;
+  pLayerCfg_Player1.BlendingFactor2 = LTDC_BLENDING_FACTOR2_PAxCA;
+
+  /* Configure the number of lines and number of pixels per line */
+  pLayerCfg_Player1.ImageWidth = 9;
+  pLayerCfg_Player1.ImageHeight = 9;
+
+/* Player 2 Configuration ------------------------------------------------------*/
+
+  /* Windowing configuration */
+  pLayerCfg_Player2.WindowX0 = 236;
+  pLayerCfg_Player2.WindowX1 = 238;
+  pLayerCfg_Player2.WindowY0 = 326;
+  pLayerCfg_Player2.WindowY1 = 328;
+
+  /* Pixel Format configuration*/
+  pLayerCfg_Player2.PixelFormat = LTDC_PIXEL_FORMAT_RGB565;
+
+  /* Start Address configuration : frame buffer is located at FLASH memory */
+  pLayerCfg_Player2.FBStartAdress = (uint32_t)&Icon_Player_2;
+
+  /* Alpha constant (255 totally opaque) */
+  pLayerCfg_Player2.Alpha = 255;
+
+  /* Default Color configuration (configure A,R,G,B component values) */
+  pLayerCfg_Player2.Alpha0 = 0;
+  pLayerCfg_Player2.Backcolor.Blue = 0;
+  pLayerCfg_Player2.Backcolor.Green = 0;
+  pLayerCfg_Player2.Backcolor.Red = 0;
+
+  /* Configure blending factors */
+  pLayerCfg_Player2.BlendingFactor1 = LTDC_BLENDING_FACTOR1_PAxCA;
+  pLayerCfg_Player2.BlendingFactor2 = LTDC_BLENDING_FACTOR2_PAxCA;
+
+  /* Configure the number of lines and number of pixels per line */
+  pLayerCfg_Player2.ImageWidth = 2;
+  pLayerCfg_Player2.ImageHeight = 2;
+
+  /* Ball Configuration ------------------------------------------------------*/
+
+    /* Windowing configuration */
+    pLayerCfg_Ball.WindowX0 = 180;
+    pLayerCfg_Ball.WindowX1 = 189;
+    pLayerCfg_Ball.WindowY0 = 180;
+    pLayerCfg_Ball.WindowY1 = 189;
+
+    /* Pixel Format configuration*/
+    pLayerCfg_Ball.PixelFormat = LTDC_PIXEL_FORMAT_RGB565;
+
+    /* Start Address configuration : frame buffer is located at FLASH memory */
+    pLayerCfg_Ball.FBStartAdress = (uint32_t)&Ball;
+
+    /* Alpha constant (255 totally opaque) */
+    pLayerCfg_Ball.Alpha = 255;
+
+    /* Default Color configuration (configure A,R,G,B component values) */
+    pLayerCfg_Ball.Alpha0 = 0;
+    pLayerCfg_Ball.Backcolor.Blue = 0;
+    pLayerCfg_Ball.Backcolor.Green = 0;
+    pLayerCfg_Ball.Backcolor.Red = 0;
+
+    /* Configure blending factors */
+    pLayerCfg_Ball.BlendingFactor1 = LTDC_BLENDING_FACTOR1_PAxCA;
+    pLayerCfg_Ball.BlendingFactor2 = LTDC_BLENDING_FACTOR2_PAxCA;
+
+    /* Configure the number of lines and number of pixels per line */
+    pLayerCfg_Ball.ImageWidth = 9;
+    pLayerCfg_Ball.ImageHeight = 9;
+
+    /* Interface Configuration ------------------------------------------------------*/
+
+      /* Windowing configuration */
+      pLayerCfg_Interface.WindowX0 = 236;
+      pLayerCfg_Interface.WindowX1 = 238;
+      pLayerCfg_Interface.WindowY0 = 326;
+      pLayerCfg_Interface.WindowY1 = 328;
+
+      /* Pixel Format configuration*/
+      pLayerCfg_Interface.PixelFormat = LTDC_PIXEL_FORMAT_RGB565;
+
+      /* Start Address configuration : frame buffer is located at FLASH memory */
+      pLayerCfg_Interface.FBStartAdress = (uint32_t)&Interface;
+
+      /* Alpha constant (255 totally opaque) */
+      pLayerCfg_Interface.Alpha = 255;
+
+      /* Default Color configuration (configure A,R,G,B component values) */
+      pLayerCfg_Interface.Alpha0 = 0;
+      pLayerCfg_Interface.Backcolor.Blue = 0;
+      pLayerCfg_Interface.Backcolor.Green = 0;
+      pLayerCfg_Interface.Backcolor.Red = 0;
+
+      /* Configure blending factors */
+      pLayerCfg_Interface.BlendingFactor1 = LTDC_BLENDING_FACTOR1_PAxCA;
+      pLayerCfg_Interface.BlendingFactor2 = LTDC_BLENDING_FACTOR2_PAxCA;
+
+      /* Configure the number of lines and number of pixels per line */
+      pLayerCfg_Interface.ImageWidth = 2;
+      pLayerCfg_Interface.ImageHeight = 2;
+
+  /* Configure the LTDC */
+  if(HAL_LTDC_Init(&LtdcHandle) != HAL_OK)
+  {
+    /* Initialization Error */
+    Error_Handler();
+  }
+
+  /* Configure the Player 1 Layer*/
+  if(HAL_LTDC_ConfigLayer(&LtdcHandle, &pLayerCfg_Player1, 0) != HAL_OK)
+  {
+    /* Initialization Error */
+    Error_Handler();
+  }
+
+  /* Configure the Player 2 Layer*/
+  if(HAL_LTDC_ConfigLayer(&LtdcHandle, &pLayerCfg_Player2, 1) != HAL_OK)
+  {
+    /* Initialization Error */
+    Error_Handler();
+  }
+
+  /* Configure the Ball Layer*/
+  if(HAL_LTDC_ConfigLayer(&LtdcHandle, &pLayerCfg_Ball, 2) != HAL_OK)
+  {
+    /* Initialization Error */
+    Error_Handler();
+  }
+
+  /* Configure the Interface Layer*/
+  if(HAL_LTDC_ConfigLayer(&LtdcHandle, &pLayerCfg_Interface, 3) != HAL_OK)
+  {
+    /* Initialization Error */
+    Error_Handler();
+  }
 }
 
 /* USER CODE END 4 */
@@ -672,7 +945,14 @@ void StartDefaultTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+	  LayerPositionRelative(&LtdcHandle, 50 , 0, 0);
+	  HAL_Delay(1000);
+	  LayerPositionRelative(&LtdcHandle, 0 ,50, 0);
+	  HAL_Delay(1000);
+	  LayerPositionRelative(&LtdcHandle, -50 ,0, 0);
+	  HAL_Delay(1000);
+	  LayerPositionRelative(&LtdcHandle, 0 ,-50, 0);
+	  HAL_Delay(1000);
   }
   /* USER CODE END 5 */
 }
