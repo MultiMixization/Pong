@@ -7,18 +7,21 @@
 C_SRCS += \
 C:/Users/kolor/STM32CubeIDE/workspace_1.9.0/LTDC_Display_2Layers/Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery.c \
 ../Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_eeprom.c \
+../Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_gyroscope.c \
 ../Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_lcd.c \
 ../Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_sdram.c 
 
 C_DEPS += \
 ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery.d \
 ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_eeprom.d \
+./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_gyroscope.d \
 ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_lcd.d \
 ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_sdram.d 
 
 OBJS += \
 ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery.o \
 ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_eeprom.o \
+./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_gyroscope.o \
 ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_lcd.o \
 ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_sdram.o 
 
@@ -32,7 +35,7 @@ Drivers/BSP/STM32F429I-Discovery/%.o Drivers/BSP/STM32F429I-Discovery/%.su: ../D
 clean: clean-Drivers-2f-BSP-2f-STM32F429I-2d-Discovery
 
 clean-Drivers-2f-BSP-2f-STM32F429I-2d-Discovery:
-	-$(RM) ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery.d ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery.o ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery.su ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_eeprom.d ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_eeprom.o ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_eeprom.su ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_lcd.d ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_lcd.o ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_lcd.su ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_sdram.d ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_sdram.o ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_sdram.su
+	-$(RM) ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery.d ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery.o ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery.su ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_eeprom.d ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_eeprom.o ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_eeprom.su ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_gyroscope.d ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_gyroscope.o ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_gyroscope.su ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_lcd.d ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_lcd.o ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_lcd.su ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_sdram.d ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_sdram.o ./Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_sdram.su
 
 .PHONY: clean-Drivers-2f-BSP-2f-STM32F429I-2d-Discovery
 

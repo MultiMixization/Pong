@@ -28,6 +28,7 @@
 #include "Icons.h"
 #include "5x5_font.h"
 #include "../../Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_lcd.h"
+#include "../../Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_gyroscope.h"
 
 /* USER CODE END Includes */
 
@@ -41,6 +42,7 @@
 
 #define LCD_FRAME_BUFFER_LAYER0                  (LCD_FRAME_BUFFER+0x130000)
 #define LCD_FRAME_BUFFER_LAYER1                  LCD_FRAME_BUFFER
+#define MAX_LINE_LENGTH							 20
 
 /* USER CODE END PD */
 
@@ -91,7 +93,6 @@ void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
-void ili9341_Init(void);
 void Test(void);
 
 /* USER CODE END PFP */
@@ -138,6 +139,8 @@ int main(void)
   MX_USART1_UART_Init();
   MX_I2C3_Init();
   /* USER CODE BEGIN 2 */
+
+  BSP_GYRO_Init();
 
   BSP_LCD_Init();
   BSP_LCD_LayerDefaultInit(0, LCD_FRAME_BUFFER_LAYER0);	//Warstwa spodnia
@@ -704,18 +707,32 @@ void HAL_LTDC_ReloadEventCallback(LTDC_HandleTypeDef *hltdc)
 void StartDefaultTask(void const * argument)
 {
   /* USER CODE BEGIN 5 */
+	float gyroscope[3] = {0};
 	int test = 0;
-	char teststr[10];
+	char line0[MAX_LINE_LENGTH];
+	char line1[MAX_LINE_LENGTH];
+	char line2[MAX_LINE_LENGTH];
+	char line3[MAX_LINE_LENGTH];
 	BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
 	BSP_LCD_SetBackColor(LCD_COLOR_BLACK);
 
   /* Infinite loop */
   for(;;)
   {
-	  HAL_Delay(1000);
+	  HAL_Delay(100);
+	  BSP_GYRO_GetXYZ(gyroscope);
 	  test++;
-	  sprintf(teststr, "%d", test);
-	  BSP_LCD_DisplayStringAtLine(1, teststr);
+
+	  sprintf(line0, "%d", test);
+	  sprintf(line1, "%.5f", gyroscope[0]);
+	  sprintf(line2, "%.5f", gyroscope[1]);
+	  sprintf(line3, "%.5f", gyroscope[2]);
+
+
+	  BSP_LCD_DisplayStringAtLine(0, line0);
+	  BSP_LCD_DisplayStringAtLine(1, line1);
+	  BSP_LCD_DisplayStringAtLine(2, line2);
+	  BSP_LCD_DisplayStringAtLine(3, line3);
 	  BSP_LCD_FillCircle(120, 160, 10);
   }
   /* USER CODE END 5 */
