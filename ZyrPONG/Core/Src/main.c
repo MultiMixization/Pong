@@ -107,7 +107,7 @@ void Test(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
+TM_L3GD20_t L3GD20_Data;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -116,7 +116,10 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
+if (TM_L3GD20_Init(TM_L3GD20_Scale_2000) != TM_L3GD20_Result_Ok) {
+          TM_ILI9341_Puts(10, 100, "Sensor ERROR!", &TM_Font_11x18, 0x0000, ILI9341_COLOR_RED);
 
+      }
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -136,13 +139,12 @@ int main(void)
   MX_TIM1_Init();
   MX_USART1_UART_Init();
   MX_I2C3_Init();
-  /* USER CODE BEGIN 2 */
-  if (TM_L3GD20_Init(TM_L3GD20_Scale_2000) != TM_L3GD20_Result_Ok) {
-          TM_ILI9341_Puts(10, 100, "Sensor ERROR!", &TM_Font_11x18, 0x0000, ILI9341_COLOR_RED);
 
-      }
-  TM_L3GD20_t L3GD20_Data;
+
+  /* USER CODE BEGIN 2 */
   LCD_Config();
+
+
   TM_L3GD20_Read(&L3GD20_Data);
   /* USER CODE END 2 */
 
@@ -180,15 +182,6 @@ int main(void)
   while (1)
   {
 	  /* Read data */
-	          TM_L3GD20_Read(&L3GD20_Data);
-	          /* Display data on LCD */
-	          sprintf(buffer, "X rotation: %4d", L3GD20_Data.X);
-	          TM_ILI9341_Puts(10, 100, buffer, &TM_Font_11x18, 0x0000, ILI9341_COLOR_RED);
-	          sprintf(buffer, "Y rotation: %4d", L3GD20_Data.Y);
-	          TM_ILI9341_Puts(10, 122, buffer, &TM_Font_11x18, 0x0000, ILI9341_COLOR_RED);
-	          sprintf(buffer, "Z rotation: %4d", L3GD20_Data.Z);
-	          TM_ILI9341_Puts(10, 144, buffer, &TM_Font_11x18, 0x0000, ILI9341_COLOR_RED);
-    /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
   }
