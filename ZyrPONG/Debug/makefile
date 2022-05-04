@@ -14,8 +14,6 @@ RM := rm -rf
 -include Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/subdir.mk
 -include Middlewares/Third_Party/FreeRTOS/Source/subdir.mk
 -include Drivers/STM32F4xx_HAL_Driver/Src/subdir.mk
--include Drivers/BSP/STM32F429I-Discovery/subdir.mk
--include Drivers/BSP/Components/subdir.mk
 -include Core/Startup/subdir.mk
 -include Core/Src/subdir.mk
 -include objects.mk
@@ -81,8 +79,8 @@ all: main-build
 main-build: ZyrPONG.elf secondary-outputs
 
 # Tool invocations
-ZyrPONG.elf ZyrPONG.map: $(OBJS) $(USER_OBJS) C:\Users\kolor\Documents\GitHub\Pong\ZyrPONG\STM32F429ZITX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-g++ -o "ZyrPONG.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\kolor\Documents\GitHub\Pong\ZyrPONG\STM32F429ZITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="ZyrPONG.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -lstdc++ -lsupc++ -Wl,--end-group
+ZyrPONG.elf ZyrPONG.map: $(OBJS) $(USER_OBJS) /home/js/Dokumenty/GitHub/Pong/ZyrPONG/STM32F429ZITX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-g++ -o "ZyrPONG.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/home/js/Dokumenty/GitHub/Pong/ZyrPONG/STM32F429ZITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="ZyrPONG.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -lstdc++ -lsupc++ -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
