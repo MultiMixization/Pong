@@ -138,9 +138,7 @@ int main(void)
   MX_I2C3_Init();
   /* USER CODE BEGIN 2 */
   if (TM_L3GD20_Init(TM_L3GD20_Scale_2000) != TM_L3GD20_Result_Ok) {
-
           TM_ILI9341_Puts(10, 100, "Sensor ERROR!", &TM_Font_11x18, 0x0000, ILI9341_COLOR_RED);
-
 
       }
   TM_L3GD20_t L3GD20_Data;
@@ -181,7 +179,15 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
+	  /* Read data */
+	          TM_L3GD20_Read(&L3GD20_Data);
+	          /* Display data on LCD */
+	          sprintf(buffer, "X rotation: %4d", L3GD20_Data.X);
+	          TM_ILI9341_Puts(10, 100, buffer, &TM_Font_11x18, 0x0000, ILI9341_COLOR_RED);
+	          sprintf(buffer, "Y rotation: %4d", L3GD20_Data.Y);
+	          TM_ILI9341_Puts(10, 122, buffer, &TM_Font_11x18, 0x0000, ILI9341_COLOR_RED);
+	          sprintf(buffer, "Z rotation: %4d", L3GD20_Data.Z);
+	          TM_ILI9341_Puts(10, 144, buffer, &TM_Font_11x18, 0x0000, ILI9341_COLOR_RED);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
