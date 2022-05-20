@@ -819,7 +819,7 @@ __weak void HAL_LTDC_ReloadEventCallback(LTDC_HandleTypeDef *hltdc)
   *                    the configuration information for the Layer.
   * @param  LayerIdx  LTDC Layer index.
   *                    This parameter can be one of the following values:
-  *                    LTDC_LAYER_1 (0) or LTDC_LAYER_2 (1) or LTDC_LAYER_3 (2) or LTDC_LAYER_4 (3)
+  *                    LTDC_LAYER_1 (0) or LTDC_LAYER_2 (1)
   * @retval HAL status
   */
 HAL_StatusTypeDef HAL_LTDC_ConfigLayer(LTDC_HandleTypeDef *hltdc, LTDC_LayerCfgTypeDef *pLayerCfg, uint32_t LayerIdx)
