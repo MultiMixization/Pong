@@ -1,0 +1,33 @@
+!SESSION 2022-05-23 10:52:14.820 -----------------------------------------------
+eclipse.buildId=Version 1.9.0
+java.version=11.0.11
+java.vendor=AdoptOpenJDK
+BootLoader constants: OS=win32, ARCH=x86_64, WS=win32, NL=pl_PL
+Command-line arguments:  -os win32 -ws win32 -arch x86_64
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 4 4 2022-05-23 10:54:27.808
+!MESSAGE CubeMX plugin appears to be active, Log4j initialization might be too late.
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 1 1 2022-05-23 10:54:27.839
+!MESSAGE Log4j initialized with config file D:\studia\6sem\ster_rob\Pong-main\.metadata\.log4j.xml
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 1 1 2022-05-23 10:54:34.751
+!MESSAGE Started RMI Server, listening on port 41337
+
+!ENTRY org.eclipse.cdt.core 1 0 2022-05-23 10:55:46.883
+!MESSAGE Indexed 'ZyrPONG' (49 sources, 202 headers) in 5.47 sec: 18,826 declarations; 90,011 references; 10 unresolved inclusions; 417 syntax errors; 3,243 unresolved names (2.9%)
+!SESSION 2022-05-24 18:57:46.211 -----------------------------------------------
+eclipse.buildId=Version 1.9.0
+java.version=11.0.11
+java.vendor=AdoptOpenJDK
+BootLoader constants: OS=win32, ARCH=x86_64, WS=win32, NL=pl_PL
+Command-line arguments:  -os win32 -ws win32 -arch x86_64
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 4 4 2022-05-24 18:57:55.587
+!MESSAGE CubeMX plugin appears to be active, Log4j initialization might be too late.
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 1 1 2022-05-24 18:57:55.745
+!MESSAGE Log4j initialized with config file D:\studia\6sem\ster_rob\Pong-main\.metadata\.log4j.xml
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 1 1 2022-05-24 18:58:08.226
+!MESSAGE Started RMI Server, listening on port 41337

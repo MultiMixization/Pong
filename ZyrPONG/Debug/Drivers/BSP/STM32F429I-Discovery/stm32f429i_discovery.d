@@ -1,6 +1,6 @@
 Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery.o: \
- C:/Users/kolor/STM32CubeIDE/workspace_1.9.0/LTDC_Display_2Layers/Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery.c \
- C:/Users/kolor/STM32CubeIDE/workspace_1.9.0/LTDC_Display_2Layers/Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery.h \
+ ../Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery.c \
+ ../Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h \
  ../Core/Inc/stm32f4xx_hal_conf.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h \
@@ -38,7 +38,7 @@ Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery.o: \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h
-C:/Users/kolor/STM32CubeIDE/workspace_1.9.0/LTDC_Display_2Layers/Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery.h:
+../Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:

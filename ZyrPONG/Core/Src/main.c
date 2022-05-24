@@ -24,9 +24,12 @@
 /* USER CODE BEGIN Includes */
 
 #include "stdio.h"
+#include "string.h"
 #include "Icons.h"
 #include "5x5_font.h"
-#include "tm_stm32f4_l3gd20.h";
+#include "../../Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_lcd.h"
+#include "../../Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_gyroscope.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -36,6 +39,11 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+
+#define LCD_FRAME_BUFFER_LAYER0                  (LCD_FRAME_BUFFER+0x130000)
+#define LCD_FRAME_BUFFER_LAYER1                  LCD_FRAME_BUFFER
+#define MAX_LINE_LENGTH							 20
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -64,10 +72,7 @@ osThreadId defaultTaskHandle;
 /* USER CODE BEGIN PV */
 
 LTDC_HandleTypeDef LtdcHandle;
-LTDC_LayerCfgTypeDef pLayerCfg_Player1;	//Poziom paletki gracza 1
-LTDC_LayerCfgTypeDef pLayerCfg_Player2;	//Poziom paletki gracza 2
-LTDC_LayerCfgTypeDef pLayerCfg_Ball;	//Poziom piłki
-LTDC_LayerCfgTypeDef pLayerCfg_Interface;	//Poziom interfejsu
+
 __IO uint32_t ReloadFlag = 0;
 
 /* USER CODE END PV */
@@ -87,17 +92,30 @@ void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
-void ili9341_Init(void);
-static void LCD_Config(void);
-HAL_StatusTypeDef LayerPositionAbsolute(LTDC_HandleTypeDef *hltdc, uint32_t newX, uint32_t newY, uint32_t LayerIdx);
-HAL_StatusTypeDef LayerPositionRelative(LTDC_HandleTypeDef *hltdc, uint32_t X, uint32_t Y, uint32_t LayerIdx);
 void Test(void);
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+// zmienne do filtrowania
 
+float A[4], B[2], C[2];
+float std_dev_v, std_dev_w;
+float V[4], W[1];
+float P_pri[4], P_post[4];
+float x_pri[2];
+float eps[1], S[1], K[2];
+float u[1], y[1];
+float acc_x, acc_y;
+
+float Ax[2], Bu[2];
+float AP[4], AT[4], APAT[4];
+float Cx[1];
+float CP[2], CPCT[1];
+float PCT[2], S1[1];
+float Keps[2];
+float KS[2], KSKT[2];
 /* USER CODE END 0 */
 
 /**
@@ -107,7 +125,7 @@ void Test(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-TM_L3GD20_t L3GD20_Data;
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -116,10 +134,7 @@ TM_L3GD20_t L3GD20_Data;
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-if (TM_L3GD20_Init(TM_L3GD20_Scale_2000) != TM_L3GD20_Result_Ok) {
-          TM_ILI9341_Puts(10, 100, "Sensor ERROR!", &TM_Font_11x18, 0x0000, ILI9341_COLOR_RED);
 
-      }
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -139,13 +154,18 @@ if (TM_L3GD20_Init(TM_L3GD20_Scale_2000) != TM_L3GD20_Result_Ok) {
   MX_TIM1_Init();
   MX_USART1_UART_Init();
   MX_I2C3_Init();
-
-
   /* USER CODE BEGIN 2 */
-  LCD_Config();
 
+  BSP_GYRO_Init();
 
-  TM_L3GD20_Read(&L3GD20_Data);
+  BSP_LCD_Init();
+  BSP_LCD_LayerDefaultInit(0, LCD_FRAME_BUFFER_LAYER0);	//Warstwa spodnia
+  BSP_LCD_SelectLayer(0);
+  BSP_LCD_LayerDefaultInit(1, LCD_FRAME_BUFFER_LAYER1);	//Warstawa wierzchnia
+  BSP_LCD_SelectLayer(1);
+  BSP_LCD_Clear(LCD_COLOR_BLACK);
+  BSP_LCD_DisplayOn();
+
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -181,7 +201,8 @@ if (TM_L3GD20_Init(TM_L3GD20_Scale_2000) != TM_L3GD20_Result_Ok) {
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  /* Read data */
+
+    /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
   }
@@ -679,41 +700,10 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
-void test(void)
-{
-	while(1)
-	{
-		  LayerPositionRelative(&LtdcHandle, 50 , 0, 0);
-		  HAL_Delay(1000);
-		  LayerPositionRelative(&LtdcHandle, 0 ,50, 0);
-		  HAL_Delay(1000);
-		  LayerPositionRelative(&LtdcHandle, -50 ,0, 0);
-		  HAL_Delay(1000);
-		  LayerPositionRelative(&LtdcHandle, 0 ,-50, 0);
-		  HAL_Delay(1000);
-	}
-}
-
 int _write(int file, char *ptr, int len)
 {
 	HAL_UART_Transmit(&huart1, (uint8_t *)ptr, len, HAL_MAX_DELAY);
 	return len;
-}
-
-
-HAL_StatusTypeDef LayerPositionAbsolute(LTDC_HandleTypeDef *hltdc, uint32_t newX, uint32_t newY, uint32_t LayerIdx)
-{
-	  return HAL_LTDC_SetWindowPosition(&LtdcHandle, newX, newY, LayerIdx);
-}
-
-HAL_StatusTypeDef LayerPositionRelative(LTDC_HandleTypeDef *hltdc, uint32_t X, uint32_t Y, uint32_t LayerIdx)
-{
-	  LTDC_LayerCfgTypeDef *pLayerCfg;
-
-	  /* Get layer configuration from handle structure */
-	  pLayerCfg = &hltdc->LayerCfg[LayerIdx];
-
-	  return HAL_LTDC_SetWindowPosition(&LtdcHandle, pLayerCfg->WindowX0 + X, pLayerCfg->WindowY0 + Y, LayerIdx);
 }
 
 void HAL_LTDC_ReloadEventCallback(LTDC_HandleTypeDef *hltdc)
@@ -721,220 +711,39 @@ void HAL_LTDC_ReloadEventCallback(LTDC_HandleTypeDef *hltdc)
   ReloadFlag = 1;
 }
 
-static void LCD_Config(void)
-{
-  /* Initialization of ILI9341 component*/
-  ili9341_Init();
 
-/* LTDC Initialization -------------------------------------------------------*/
+// inicjalizacja do filtra
+dt = 0.1;
 
-  /* Polarity configuration */
-  /* Initialize the horizontal synchronization polarity as active low */
-  LtdcHandle.Init.HSPolarity = LTDC_HSPOLARITY_AL;
-  /* Initialize the vertical synchronization polarity as active low */
-  LtdcHandle.Init.VSPolarity = LTDC_VSPOLARITY_AL;
-  /* Initialize the data enable polarity as active low */
-  LtdcHandle.Init.DEPolarity = LTDC_DEPOLARITY_AL;
-  /* Initialize the pixel clock polarity as input pixel clock */
-  LtdcHandle.Init.PCPolarity = LTDC_PCPOLARITY_IPC;
+   A[0] = 1;
+   A[1] = -dt;
+   A[2] = 0;
+   A[3] = 1;
 
-  /* Timing configuration  (Typical configuration from ILI9341 datasheet)
-      HSYNC=10 (9+1)
-      HBP=20 (29-10+1)
-      ActiveW=240 (269-20-10+1)
-      HFP=10 (279-240-20-10+1)
+   B[0] = dt;
+   B[1] = 0;
 
-      VSYNC=2 (1+1)
-      VBP=2 (3-2+1)
-      ActiveH=320 (323-2-2+1)
-      VFP=4 (327-320-2-2+1)
-  */
+   C[0] = 1;
+   C[1] = 0;
 
-  /* Timing configuration */
-  /* Horizontal synchronization width = Hsync - 1 */
-  LtdcHandle.Init.HorizontalSync = 9;
-  /* Vertical synchronization height = Vsync - 1 */
-  LtdcHandle.Init.VerticalSync = 1;
-  /* Accumulated horizontal back porch = Hsync + HBP - 1 */
-  LtdcHandle.Init.AccumulatedHBP = 29;
-  /* Accumulated vertical back porch = Vsync + VBP - 1 */
-  LtdcHandle.Init.AccumulatedVBP = 3;
-  /* Accumulated active width = Hsync + HBP + Active Width - 1 */
-  LtdcHandle.Init.AccumulatedActiveH = 323;
-  /* Accumulated active height = Vsync + VBP + Active Height - 1 */
-  LtdcHandle.Init.AccumulatedActiveW = 269;
-  /* Total height = Vsync + VBP + Active Height + VFP - 1 */
-  LtdcHandle.Init.TotalHeigh = 327;
-  /* Total width = Hsync + HBP + Active Width + HFP - 1 */
-  LtdcHandle.Init.TotalWidth = 279;
+   std_dev_v = 1;
+   std_dev_w = 2;
+   V[0] = std_dev_v*std_dev_v*dt;
+   V[1] = 0;
+   V[2] = 0;
+   V[3] = std_dev_v*std_dev_v*dt;
+   W[0] = std_dev_w*std_dev_w;
 
-  /* Configure R,G,B component values for LCD background color */
-  LtdcHandle.Init.Backcolor.Blue = 0;
-  LtdcHandle.Init.Backcolor.Green = 0;
-  LtdcHandle.Init.Backcolor.Red = 0;
+   /* Wartosci poczatkowe filtru */
+   P_post[0] = 1;
+   P_post[1] = 0;
+   P_post[2] = 0;
+   P_post[3] = 1;
 
-  LtdcHandle.Instance = LTDC;
-
-/* Player 1 Configuration ------------------------------------------------------*/
-
-  /* Windowing configuration */
-  pLayerCfg_Player1.WindowX0 = 10;
-  pLayerCfg_Player1.WindowX1 = 19;
-  pLayerCfg_Player1.WindowY0 = 10;
-  pLayerCfg_Player1.WindowY1 = 19;
-
-  /* Pixel Format configuration*/
-  pLayerCfg_Player1.PixelFormat = LTDC_PIXEL_FORMAT_RGB565;
-
-  /* Start Address configuration : frame buffer is located at FLASH memory */
-  pLayerCfg_Player1.FBStartAdress = (uint32_t)&Ball;
-
-  /* Alpha constant (255 totally opaque) */
-  pLayerCfg_Player1.Alpha = 255;
-
-  /* Default Color configuration (configure A,R,G,B component values) */
-  pLayerCfg_Player1.Alpha0 = 0;
-  pLayerCfg_Player1.Backcolor.Blue = 0;
-  pLayerCfg_Player1.Backcolor.Green = 0;
-  pLayerCfg_Player1.Backcolor.Red = 0;
-
-  /* Configure blending factors */
-  pLayerCfg_Player1.BlendingFactor1 = LTDC_BLENDING_FACTOR1_PAxCA;
-  pLayerCfg_Player1.BlendingFactor2 = LTDC_BLENDING_FACTOR2_PAxCA;
-
-  /* Configure the number of lines and number of pixels per line */
-  pLayerCfg_Player1.ImageWidth = 9;
-  pLayerCfg_Player1.ImageHeight = 9;
-
-/* Player 2 Configuration ------------------------------------------------------*/
-
-  /* Windowing configuration */
-  pLayerCfg_Player2.WindowX0 = 236;
-  pLayerCfg_Player2.WindowX1 = 238;
-  pLayerCfg_Player2.WindowY0 = 326;
-  pLayerCfg_Player2.WindowY1 = 328;
-
-  /* Pixel Format configuration*/
-  pLayerCfg_Player2.PixelFormat = LTDC_PIXEL_FORMAT_RGB565;
-
-  /* Start Address configuration : frame buffer is located at FLASH memory */
-  pLayerCfg_Player2.FBStartAdress = (uint32_t)&Icon_Player_2;
-
-  /* Alpha constant (255 totally opaque) */
-  pLayerCfg_Player2.Alpha = 255;
-
-  /* Default Color configuration (configure A,R,G,B component values) */
-  pLayerCfg_Player2.Alpha0 = 0;
-  pLayerCfg_Player2.Backcolor.Blue = 0;
-  pLayerCfg_Player2.Backcolor.Green = 0;
-  pLayerCfg_Player2.Backcolor.Red = 0;
-
-  /* Configure blending factors */
-  pLayerCfg_Player2.BlendingFactor1 = LTDC_BLENDING_FACTOR1_PAxCA;
-  pLayerCfg_Player2.BlendingFactor2 = LTDC_BLENDING_FACTOR2_PAxCA;
-
-  /* Configure the number of lines and number of pixels per line */
-  pLayerCfg_Player2.ImageWidth = 2;
-  pLayerCfg_Player2.ImageHeight = 2;
-
-  /* Ball Configuration ------------------------------------------------------*/
-
-    /* Windowing configuration */
-    pLayerCfg_Ball.WindowX0 = 180;
-    pLayerCfg_Ball.WindowX1 = 189;
-    pLayerCfg_Ball.WindowY0 = 180;
-    pLayerCfg_Ball.WindowY1 = 189;
-
-    /* Pixel Format configuration*/
-    pLayerCfg_Ball.PixelFormat = LTDC_PIXEL_FORMAT_RGB565;
-
-    /* Start Address configuration : frame buffer is located at FLASH memory */
-    pLayerCfg_Ball.FBStartAdress = (uint32_t)&Ball;
-
-    /* Alpha constant (255 totally opaque) */
-    pLayerCfg_Ball.Alpha = 255;
-
-    /* Default Color configuration (configure A,R,G,B component values) */
-    pLayerCfg_Ball.Alpha0 = 0;
-    pLayerCfg_Ball.Backcolor.Blue = 0;
-    pLayerCfg_Ball.Backcolor.Green = 0;
-    pLayerCfg_Ball.Backcolor.Red = 0;
-
-    /* Configure blending factors */
-    pLayerCfg_Ball.BlendingFactor1 = LTDC_BLENDING_FACTOR1_PAxCA;
-    pLayerCfg_Ball.BlendingFactor2 = LTDC_BLENDING_FACTOR2_PAxCA;
-
-    /* Configure the number of lines and number of pixels per line */
-    pLayerCfg_Ball.ImageWidth = 9;
-    pLayerCfg_Ball.ImageHeight = 9;
-
-    /* Interface Configuration ------------------------------------------------------*/
-
-      /* Windowing configuration */
-      pLayerCfg_Interface.WindowX0 = 236;
-      pLayerCfg_Interface.WindowX1 = 238;
-      pLayerCfg_Interface.WindowY0 = 326;
-      pLayerCfg_Interface.WindowY1 = 328;
-
-      /* Pixel Format configuration*/
-      pLayerCfg_Interface.PixelFormat = LTDC_PIXEL_FORMAT_RGB565;
-
-      /* Start Address configuration : frame buffer is located at FLASH memory */
-      pLayerCfg_Interface.FBStartAdress = (uint32_t)&Interface;
-
-      /* Alpha constant (255 totally opaque) */
-      pLayerCfg_Interface.Alpha = 255;
-
-      /* Default Color configuration (configure A,R,G,B component values) */
-      pLayerCfg_Interface.Alpha0 = 0;
-      pLayerCfg_Interface.Backcolor.Blue = 0;
-      pLayerCfg_Interface.Backcolor.Green = 0;
-      pLayerCfg_Interface.Backcolor.Red = 0;
-
-      /* Configure blending factors */
-      pLayerCfg_Interface.BlendingFactor1 = LTDC_BLENDING_FACTOR1_PAxCA;
-      pLayerCfg_Interface.BlendingFactor2 = LTDC_BLENDING_FACTOR2_PAxCA;
-
-      /* Configure the number of lines and number of pixels per line */
-      pLayerCfg_Interface.ImageWidth = 2;
-      pLayerCfg_Interface.ImageHeight = 2;
-
-  /* Configure the LTDC */
-  if(HAL_LTDC_Init(&LtdcHandle) != HAL_OK)
-  {
-    /* Initialization Error */
-    Error_Handler();
-  }
-
-  /* Configure the Player 1 Layer*/
-  if(HAL_LTDC_ConfigLayer(&LtdcHandle, &pLayerCfg_Player1, 0) != HAL_OK)
-  {
-    /* Initialization Error */
-    Error_Handler();
-  }
-
-  /* Configure the Player 2 Layer*/
-  if(HAL_LTDC_ConfigLayer(&LtdcHandle, &pLayerCfg_Player2, 1) != HAL_OK)
-  {
-    /* Initialization Error */
-    Error_Handler();
-  }
-
-  /* Configure the Ball Layer*/
-  if(HAL_LTDC_ConfigLayer(&LtdcHandle, &pLayerCfg_Ball, 2) != HAL_OK)
-  {
-    /* Initialization Error */
-    Error_Handler();
-  }
-
-  /* Configure the Interface Layer*/
-  if(HAL_LTDC_ConfigLayer(&LtdcHandle, &pLayerCfg_Interface, 3) != HAL_OK)
-  {
-    /* Initialization Error */
-    Error_Handler();
-  }
-}
-
+   acc_x = sensor_acc_get_x();
+      acc_y = sensor_acc_get_y();
+      x_post[0] = atan(acc_x/acc_y)*180/M_PI;
+      x_post[1] = 0;
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -947,17 +756,107 @@ static void LCD_Config(void)
 void StartDefaultTask(void const * argument)
 {
   /* USER CODE BEGIN 5 */
+	// inicjalizacja do filtra
+		dt = 0.1;
+
+	   A[0] = 1;
+	   A[1] = -dt;
+	   A[2] = 0;
+	   A[3] = 1;
+
+	   B[0] = dt;
+	   B[1] = 0;
+
+	   C[0] = 1;
+	   C[1] = 0;
+
+	   std_dev_v = 1;
+	   std_dev_w = 2;
+	   V[0] = std_dev_v*std_dev_v*dt;
+	   V[1] = 0;
+	   V[2] = 0;
+	   V[3] = std_dev_v*std_dev_v*dt;
+	   W[0] = std_dev_w*std_dev_w;
+
+	   /* Wartosci poczatkowe filtru */
+	   P_post[0] = 1;
+	   P_post[1] = 0;
+	   P_post[2] = 0;
+	   P_post[3] = 1;
+
+
+
+	float gyroscope[3] = {0};
+	int test = 0;
+	char line0[MAX_LINE_LENGTH];
+	char line1[MAX_LINE_LENGTH];
+	char line2[MAX_LINE_LENGTH];
+	char line3[MAX_LINE_LENGTH];
+	BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+	BSP_LCD_SetBackColor(LCD_COLOR_BLACK);
+
+			acc_x = gyroscope[1];
+	      acc_y = gyroscope[2];
+	      x_post[0] = atan(acc_x/acc_y)*180/M_PI;
+	      x_post[1] = 0;
   /* Infinite loop */
   for(;;)
   {
-	  LayerPositionRelative(&LtdcHandle, 50 , 0, 0);
-	  HAL_Delay(1000);
-	  LayerPositionRelative(&LtdcHandle, 0 ,50, 0);
-	  HAL_Delay(1000);
-	  LayerPositionRelative(&LtdcHandle, -50 ,0, 0);
-	  HAL_Delay(1000);
-	  LayerPositionRelative(&LtdcHandle, 0 ,-50, 0);
-	  HAL_Delay(1000);
+	  HAL_Delay(100);
+	  BSP_GYRO_GetXYZ(gyroscope);
+	  test++;
+
+	  /* filtr
+	   *  x(t+1|t) = Ax(t|t) + Bu(t) */
+	        u[0] = gyroscope[3]*250/32768;
+	        matrix_2x2_mul_2x1(A, x_post, Ax);
+	        matrix_2x1_mul_1x1(B, u, Bu);
+	        matrix_2x1_add_2x1(Ax, Bu, x_pri);
+
+	        /* P(t+1|t) = AP(t|t)A^T + V */
+	        matrix_2x2_mul_2x2(A, P_post, AP);
+	        matrix_2x2_trans(A, AT);
+	        matrix_2x2_mul_2x2(AP, AT, APAT);
+	        matrix_2x2_add_2x2(APAT, V, P_pri);
+
+	        /* eps(t) = y(t) - Cx(t|t-1) */
+	        acc_x = sensor_acc_get_x();
+	        acc_y = sensor_acc_get_y();
+	        y[0] = atan(acc_x/acc_y)*180/M_PI;
+	        matrix_1x2_mul_2x1(C, x_pri, Cx);
+	        eps[0] = y[0] - Cx[0];
+
+	        /* S(t) = CP(t|t-1)C^T + W */
+	        matrix_1x2_mul_2x2(C, P_pri, CP);
+	        matrix_1x2_mul_2x1(C, C, CPCT);
+	        S[0] = CPCT[0] + W[0];
+
+	        /* K(t) = P(t|t-1)C^TS(t)^-1 */
+	        matrix_2x2_mul_2x1(P_pri, C, PCT);
+	        S1[0] = 1/S[0];
+	        matrix_2x1_mul_1x1(PCT, S1, K);
+
+	        /* x(t|t) = x(t|t-1) + K(t)eps(t) */
+	        matrix_2x1_mul_1x1(K, eps, Keps);
+	        matrix_2x1_add_2x1(x_pri, Keps, x_post);
+
+	        /* P(t|t) = P(t|t-1) - K(t)S(t)K(t)^T */
+	        matrix_2x1_mul_1x1(K, S, KS);
+	        matrix_2x1_mul_1x2(KS, K, KSKT);
+	        matrix_2x2_sub_2x2(P_pri, KSKT, P_post);
+
+
+	  sprintf(line0, "%d", test);
+	  sprintf(line1, "%.5f", x_post[1]);
+	  sprintf(line2, "%.5f", gyroscope[1]);
+	  sprintf(line3, "%.5f", gyroscope[2]);
+
+
+	  BSP_LCD_DisplayStringAtLine(0, line0);
+	  BSP_LCD_DisplayStringAtLine(1, line1);
+	  BSP_LCD_DisplayStringAtLine(2, line2);
+	  BSP_LCD_DisplayStringAtLine(3, line3);
+	  BSP_LCD_FillCircle(120, 160, 10);
   }
   /* USER CODE END 5 */
 }

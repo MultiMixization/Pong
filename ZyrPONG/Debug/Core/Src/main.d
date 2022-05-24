@@ -53,7 +53,16 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/queue.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/event_groups.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/timers.h \
- ../Core/Inc/Icons.h ../Core/Inc/5x5_font.h
+ ../Core/Inc/Icons.h ../Core/Inc/5x5_font.h \
+ ../Core/Src/../../Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_lcd.h \
+ ../Core/Src/../../Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery.h \
+ ../Core/Src/../../Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_sdram.h \
+ d:\studia\6sem\ster_rob\pong-main\zyrpong\utilities\fonts\fonts.h \
+ ../Core/Src/../../Drivers/BSP/STM32F429I-Discovery/../Components/ili9341/ili9341.h \
+ d:\studia\6sem\ster_rob\pong-main\zyrpong\drivers\bsp\components\common\lcd.h \
+ ../Core/Src/../../Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_gyroscope.h \
+ ../Core/Src/../../Drivers/BSP/STM32F429I-Discovery/../Components/l3gd20/l3gd20.h \
+ d:\studia\6sem\ster_rob\pong-main\zyrpong\drivers\bsp\components\common\gyro.h
 ../Core/Inc/main.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:
@@ -111,3 +120,12 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Middlewares/Third_Party/FreeRTOS/Source/include/timers.h:
 ../Core/Inc/Icons.h:
 ../Core/Inc/5x5_font.h:
+../Core/Src/../../Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_lcd.h:
+../Core/Src/../../Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery.h:
+../Core/Src/../../Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_sdram.h:
+d:\studia\6sem\ster_rob\pong-main\zyrpong\utilities\fonts\fonts.h:
+../Core/Src/../../Drivers/BSP/STM32F429I-Discovery/../Components/ili9341/ili9341.h:
+d:\studia\6sem\ster_rob\pong-main\zyrpong\drivers\bsp\components\common\lcd.h:
+../Core/Src/../../Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_gyroscope.h:
+../Core/Src/../../Drivers/BSP/STM32F429I-Discovery/../Components/l3gd20/l3gd20.h:
+d:\studia\6sem\ster_rob\pong-main\zyrpong\drivers\bsp\components\common\gyro.h:
