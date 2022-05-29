@@ -27,6 +27,7 @@
 #include "string.h"
 #include "Icons.h"
 #include "5x5_font.h"
+#include "math.h"
 #include "../../Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_lcd.h"
 #include "../../Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_gyroscope.h"
 
@@ -76,6 +77,14 @@ LTDC_HandleTypeDef LtdcHandle;
 
 __IO uint32_t ReloadFlag = 0;
 
+float x_history[9], y_history[9], z_history[9];
+
+float gyroscope[3] = {0};
+
+float x_average, y_average, z_average;
+
+osThreadId SecondaryTaskHandle;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -94,6 +103,10 @@ void StartDefaultTask(void const * argument);
 /* USER CODE BEGIN PFP */
 
 void Test(void);
+
+void Rewrite_History();
+
+void StartDataGathering(void const * argument);
 
 /* USER CODE END PFP */
 
@@ -170,11 +183,14 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 4096);
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 2048);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
+  osThreadDef(DataGathering, StartDataGathering, osPriorityHigh, 0, 2048);
+  SecondaryTaskHandle = osThreadCreate(osThread(DataGathering), NULL);
+
   /* USER CODE END RTOS_THREADS */
 
   /* Start scheduler */
@@ -695,6 +711,39 @@ void HAL_LTDC_ReloadEventCallback(LTDC_HandleTypeDef *hltdc)
   ReloadFlag = 1;
 }
 
+void Rewrite_History()
+{
+	float newx_average = 0;
+	float newy_average = 0;
+	float newz_average = 0;
+	for(int i=1; i<=9; i++)
+	{
+		x_history[i-1] = x_history[i];
+		y_history[i-1] = y_history[i];
+		z_history[i-1] = z_history[i];
+		newx_average += x_history[i];
+		newy_average += y_history[i];
+		newz_average += z_history[i];
+	}
+	BSP_GYRO_GetXYZ(gyroscope);
+	newx_average += gyroscope[1];
+	newy_average += gyroscope[2];
+	newz_average += gyroscope[3];
+
+	x_average = newx_average / 10.0;
+	y_average = newy_average / 10.0;
+	z_average = newz_average / 10.0;
+}
+
+void StartDataGathering(void const * argument)
+{
+	while(1)
+	{
+		Rewrite_History();
+		osDelay(1);
+	}
+}
+
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -707,7 +756,6 @@ void HAL_LTDC_ReloadEventCallback(LTDC_HandleTypeDef *hltdc)
 void StartDefaultTask(void const * argument)
 {
   /* USER CODE BEGIN 5 */
-	float gyroscope[3] = {0};
 	int test = 0;
 	char line0[MAX_LINE_LENGTH];
 	char line1[MAX_LINE_LENGTH];
@@ -719,14 +767,13 @@ void StartDefaultTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-	  HAL_Delay(100);
-	  BSP_GYRO_GetXYZ(gyroscope);
+	  osDelay(33);
 	  test++;
 
 	  sprintf(line0, "%d", test);
-	  sprintf(line1, "%.5f", gyroscope[0]);
-	  sprintf(line2, "%.5f", gyroscope[1]);
-	  sprintf(line3, "%.5f", gyroscope[2]);
+	  sprintf(line1, "%.5f", x_average / 1000.0);
+	  sprintf(line2, "%.5f", y_average / 1000.0);
+	  sprintf(line3, "%.5f", z_average / 1000.0);
 
 
 	  BSP_LCD_DisplayStringAtLine(0, line0);
