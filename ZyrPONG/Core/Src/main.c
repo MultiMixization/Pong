@@ -83,6 +83,12 @@ float gyroscope[3] = {0};
 
 float x_average, y_average, z_average;
 
+int LeftXPos = 20, LeftYPos = 130, RightXPos = 210, RightYPos = 130;
+
+float LeftXSpeed = 0, LeftYSpeed = 0, RightXSpeed = 0, RightYSpeed = 0;
+
+float AngleY = 0, AngleX = 0, AngleZ = 0;
+
 osThreadId SecondaryTaskHandle;
 
 /* USER CODE END PV */
@@ -107,6 +113,8 @@ void Test(void);
 void Rewrite_History();
 
 void StartDataGathering(void const * argument);
+
+void CheckForBoundaries();
 
 /* USER CODE END PFP */
 
@@ -158,10 +166,10 @@ int main(void)
   BSP_LCD_Init();
   BSP_LCD_LayerDefaultInit(0, LCD_FRAME_BUFFER_LAYER0);	//Warstwa spodnia
   BSP_LCD_SelectLayer(0);
-  BSP_LCD_LayerDefaultInit(1, LCD_FRAME_BUFFER_LAYER1);	//Warstawa wierzchnia
-  BSP_LCD_SelectLayer(1);
-  BSP_LCD_Clear(LCD_COLOR_BLACK);
   BSP_LCD_DisplayOn();
+  BSP_LCD_Clear(LCD_COLOR_BLACK);
+  BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+  BSP_LCD_SetBackColor(LCD_COLOR_BLACK);
 
   /* USER CODE END 2 */
 
@@ -730,9 +738,17 @@ void Rewrite_History()
 	newy_average += gyroscope[2];
 	newz_average += gyroscope[3];
 
-	x_average = newx_average / 10.0;
-	y_average = newy_average / 10.0;
-	z_average = newz_average / 10.0;
+	x_history[10] = gyroscope[0];
+	y_history[10] = gyroscope[1];
+	z_history[10] = gyroscope[2];
+
+	x_average = (newx_average / 10.0) / 1000.0 - 3.0;
+	y_average = (newy_average / 10.0) / 1000.0 - 3.0;
+	z_average = (newz_average / 10.0) / 1000.0 - 3.0;
+
+	AngleX += (x_average / 100.0);
+	AngleY += (y_average / 100.0);
+	AngleZ += (z_average / 100.0);
 }
 
 void StartDataGathering(void const * argument)
@@ -740,7 +756,21 @@ void StartDataGathering(void const * argument)
 	while(1)
 	{
 		Rewrite_History();
-		osDelay(1);
+		osDelay(2);
+	}
+}
+
+void CheckForBoundaries()
+{
+	if(RightYPos <= 0)
+	{
+		RightYPos = 0;
+		RightYSpeed = 0;
+	}
+	if(RightYPos >= 270)
+	{
+		RightYPos = 270;
+		RightYSpeed = 0;
 	}
 }
 
@@ -761,26 +791,30 @@ void StartDefaultTask(void const * argument)
 	char line1[MAX_LINE_LENGTH];
 	char line2[MAX_LINE_LENGTH];
 	char line3[MAX_LINE_LENGTH];
-	BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
-	BSP_LCD_SetBackColor(LCD_COLOR_BLACK);
 
   /* Infinite loop */
   for(;;)
   {
 	  osDelay(33);
 	  test++;
+	  RightYSpeed += AngleX / 25.0;
 
-	  sprintf(line0, "%d", test);
-	  sprintf(line1, "%.5f", x_average / 1000.0);
-	  sprintf(line2, "%.5f", y_average / 1000.0);
-	  sprintf(line3, "%.5f", z_average / 1000.0);
+	  sprintf(line0, "%.5f", AngleY);
+	  sprintf(line1, "%.5f", x_average);
+	  sprintf(line2, "%.5f", y_average);
+	  sprintf(line3, "%.5f", z_average);
 
+	  RightYPos +=RightYSpeed;
+	  CheckForBoundaries();
 
-	  BSP_LCD_DisplayStringAtLine(0, line0);
-	  BSP_LCD_DisplayStringAtLine(1, line1);
-	  BSP_LCD_DisplayStringAtLine(2, line2);
-	  BSP_LCD_DisplayStringAtLine(3, line3);
+	  BSP_LCD_Clear(LCD_COLOR_BLACK);
+	  //BSP_LCD_DisplayStringAtLine(0, line0);
+	  //BSP_LCD_DisplayStringAtLine(1, line1);
+	  //BSP_LCD_DisplayStringAtLine(2, line2);
+	  //BSP_LCD_DisplayStringAtLine(3, line3);
 	  BSP_LCD_FillCircle(120, 160, 10);
+	  BSP_LCD_FillRect( LeftXPos, LeftYPos, 10, 50);
+	  BSP_LCD_FillRect( RightXPos, RightYPos, 10, 50);
   }
   /* USER CODE END 5 */
 }
