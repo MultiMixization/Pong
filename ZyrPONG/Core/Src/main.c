@@ -44,6 +44,9 @@
 #define LCD_FRAME_BUFFER_LAYER0                  (LCD_FRAME_BUFFER+0x130000)
 #define LCD_FRAME_BUFFER_LAYER1                  LCD_FRAME_BUFFER
 #define MAX_LINE_LENGTH							 20
+#define BALL_DIAMETER							 10
+#define BLOCK_LENGTH							 50
+#define BLOCK_WIDTH								 10
 
 /* USER CODE END PD */
 
@@ -83,11 +86,13 @@ float gyroscope[3] = {0};
 
 float x_average, y_average, z_average;
 
-int LeftXPos = 20, LeftYPos = 130, RightXPos = 210, RightYPos = 130;
+int LeftXPos = 20, LeftYPos = 130, RightXPos = 210, RightYPos = 130, BallXPos = 100, BallYPos = 100;
 
-float LeftXSpeed = 0, LeftYSpeed = 0, RightXSpeed = 0, RightYSpeed = 0;
+float LeftXSpeed = 0, LeftYSpeed = 0, RightXSpeed = 0, RightYSpeed = 0, BallXSpeed = 2, BallYSpeed = 2;
 
 float AngleY = 0, AngleX = 0, AngleZ = 0;
+
+unsigned int score = 0;
 
 osThreadId SecondaryTaskHandle;
 
@@ -772,6 +777,36 @@ void CheckForBoundaries()
 		RightYPos = 270;
 		RightYSpeed = 0;
 	}
+
+	if(LeftYPos <= 0)
+	{
+		LeftYPos = 0;
+		LeftYSpeed = 0;
+	}
+	if(LeftYPos >= 270)
+	{
+		LeftYPos = 270;
+		LeftYSpeed = 0;
+	}
+
+	if(BallXPos <= BALL_DIAMETER)
+	{
+		score++;
+		BallXSpeed = 2;
+		BallXPos = 120;
+		BallYPos = 160;
+	}
+	if(BallXPos >= 240 - BALL_DIAMETER)
+	{
+		score--;
+		BallXSpeed = -2;
+		BallXPos = 120;
+		BallYPos = 160;
+	}
+	if(BallYPos <= BALL_DIAMETER || BallYPos >= 320 - BALL_DIAMETER)
+	{
+		BallYSpeed = -BallYSpeed;
+	}
 }
 
 /* USER CODE END 4 */
@@ -786,33 +821,41 @@ void CheckForBoundaries()
 void StartDefaultTask(void const * argument)
 {
   /* USER CODE BEGIN 5 */
-	int test = 0;
 	char line0[MAX_LINE_LENGTH];
-	char line1[MAX_LINE_LENGTH];
-	char line2[MAX_LINE_LENGTH];
-	char line3[MAX_LINE_LENGTH];
+	//char line1[MAX_LINE_LENGTH];
+	//char line2[MAX_LINE_LENGTH];
+	//char line3[MAX_LINE_LENGTH];
 
   /* Infinite loop */
   for(;;)
   {
 	  osDelay(33);
-	  test++;
 	  RightYSpeed += AngleX / 25.0;
 
-	  sprintf(line0, "%.5f", AngleY);
-	  sprintf(line1, "%.5f", x_average);
-	  sprintf(line2, "%.5f", y_average);
-	  sprintf(line3, "%.5f", z_average);
+	  if(HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin))
+	  {
+		  AngleX = 0;
+		  AngleY = 0;
+		  AngleZ = 0;
+	  }
 
-	  RightYPos +=RightYSpeed;
+	  sprintf(line0, "%d", score);
+	  //sprintf(line1, "%.5f", x_average);
+	  //sprintf(line2, "%.5f", y_average);
+	  //sprintf(line3, "%.5f", z_average);
+
+	  RightYPos += RightYSpeed;
+	  LeftYPos += LeftYSpeed;
+	  BallXPos += BallXSpeed;
+	  BallYPos += BallYSpeed;
 	  CheckForBoundaries();
 
 	  BSP_LCD_Clear(LCD_COLOR_BLACK);
-	  //BSP_LCD_DisplayStringAtLine(0, line0);
+	  BSP_LCD_DisplayStringAtLine(0, line0);
 	  //BSP_LCD_DisplayStringAtLine(1, line1);
 	  //BSP_LCD_DisplayStringAtLine(2, line2);
 	  //BSP_LCD_DisplayStringAtLine(3, line3);
-	  BSP_LCD_FillCircle(120, 160, 10);
+	  BSP_LCD_FillCircle(BallXPos, BallYPos, BALL_DIAMETER);
 	  BSP_LCD_FillRect( LeftXPos, LeftYPos, 10, 50);
 	  BSP_LCD_FillRect( RightXPos, RightYPos, 10, 50);
   }
