@@ -27,6 +27,7 @@
 #include "string.h"
 #include "Icons.h"
 #include "5x5_font.h"
+#include "math.h"
 #include "../../Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_lcd.h"
 #include "../../Drivers/BSP/STM32F429I-Discovery/stm32f429i_discovery_gyroscope.h"
 
@@ -43,6 +44,9 @@
 #define LCD_FRAME_BUFFER_LAYER0                  (LCD_FRAME_BUFFER+0x130000)
 #define LCD_FRAME_BUFFER_LAYER1                  LCD_FRAME_BUFFER
 #define MAX_LINE_LENGTH							 20
+#define BALL_DIAMETER							 10
+#define BLOCK_LENGTH							 50
+#define BLOCK_WIDTH								 10
 
 /* USER CODE END PD */
 
@@ -76,6 +80,22 @@ LTDC_HandleTypeDef LtdcHandle;
 
 __IO uint32_t ReloadFlag = 0;
 
+float x_history[9], y_history[9], z_history[9];
+
+float gyroscope[3] = {0};
+
+float x_average, y_average, z_average;
+
+int LeftXPos = 20, LeftYPos = 130, RightXPos = 210, RightYPos = 130, BallXPos = 100, BallYPos = 100;
+
+float LeftXSpeed = 0, LeftYSpeed = 0, RightXSpeed = 0, RightYSpeed = 0, BallXSpeed = 2, BallYSpeed = 2;
+
+float AngleY = 0, AngleX = 0, AngleZ = 0;
+
+unsigned int score = 0;
+
+osThreadId SecondaryTaskHandle;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -94,6 +114,12 @@ void StartDefaultTask(void const * argument);
 /* USER CODE BEGIN PFP */
 
 void Test(void);
+
+void Rewrite_History();
+
+void StartDataGathering(void const * argument);
+
+void CheckForBoundaries();
 
 /* USER CODE END PFP */
 
@@ -145,10 +171,10 @@ int main(void)
   BSP_LCD_Init();
   BSP_LCD_LayerDefaultInit(0, LCD_FRAME_BUFFER_LAYER0);	//Warstwa spodnia
   BSP_LCD_SelectLayer(0);
-  BSP_LCD_LayerDefaultInit(1, LCD_FRAME_BUFFER_LAYER1);	//Warstawa wierzchnia
-  BSP_LCD_SelectLayer(1);
-  BSP_LCD_Clear(LCD_COLOR_BLACK);
   BSP_LCD_DisplayOn();
+  BSP_LCD_Clear(LCD_COLOR_BLACK);
+  BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+  BSP_LCD_SetBackColor(LCD_COLOR_BLACK);
 
   /* USER CODE END 2 */
 
@@ -170,11 +196,14 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 4096);
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 2048);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
+  osThreadDef(DataGathering, StartDataGathering, osPriorityHigh, 0, 2048);
+  SecondaryTaskHandle = osThreadCreate(osThread(DataGathering), NULL);
+
   /* USER CODE END RTOS_THREADS */
 
   /* Start scheduler */
@@ -695,6 +724,91 @@ void HAL_LTDC_ReloadEventCallback(LTDC_HandleTypeDef *hltdc)
   ReloadFlag = 1;
 }
 
+void Rewrite_History()
+{
+	float newx_average = 0;
+	float newy_average = 0;
+	float newz_average = 0;
+	for(int i=1; i<=9; i++)
+	{
+		x_history[i-1] = x_history[i];
+		y_history[i-1] = y_history[i];
+		z_history[i-1] = z_history[i];
+		newx_average += x_history[i];
+		newy_average += y_history[i];
+		newz_average += z_history[i];
+	}
+	BSP_GYRO_GetXYZ(gyroscope);
+	newx_average += gyroscope[1];
+	newy_average += gyroscope[2];
+	newz_average += gyroscope[3];
+
+	x_history[10] = gyroscope[0];
+	y_history[10] = gyroscope[1];
+	z_history[10] = gyroscope[2];
+
+	x_average = (newx_average / 10.0) / 1000.0 - 3.0;
+	y_average = (newy_average / 10.0) / 1000.0 - 3.0;
+	z_average = (newz_average / 10.0) / 1000.0 - 3.0;
+
+	AngleX += (x_average / 100.0);
+	AngleY += (y_average / 100.0);
+	AngleZ += (z_average / 100.0);
+}
+
+void StartDataGathering(void const * argument)
+{
+	while(1)
+	{
+		Rewrite_History();
+		osDelay(2);
+	}
+}
+
+void CheckForBoundaries()
+{
+	if(RightYPos <= 0)
+	{
+		RightYPos = 0;
+		RightYSpeed = 0;
+	}
+	if(RightYPos >= 270)
+	{
+		RightYPos = 270;
+		RightYSpeed = 0;
+	}
+
+	if(LeftYPos <= 0)
+	{
+		LeftYPos = 0;
+		LeftYSpeed = 0;
+	}
+	if(LeftYPos >= 270)
+	{
+		LeftYPos = 270;
+		LeftYSpeed = 0;
+	}
+
+	if(BallXPos <= BALL_DIAMETER)
+	{
+		score++;
+		BallXSpeed = 2;
+		BallXPos = 120;
+		BallYPos = 160;
+	}
+	if(BallXPos >= 240 - BALL_DIAMETER)
+	{
+		score--;
+		BallXSpeed = -2;
+		BallXPos = 120;
+		BallYPos = 160;
+	}
+	if(BallYPos <= BALL_DIAMETER || BallYPos >= 320 - BALL_DIAMETER)
+	{
+		BallYSpeed = -BallYSpeed;
+	}
+}
+
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -707,33 +821,43 @@ void HAL_LTDC_ReloadEventCallback(LTDC_HandleTypeDef *hltdc)
 void StartDefaultTask(void const * argument)
 {
   /* USER CODE BEGIN 5 */
-	float gyroscope[3] = {0};
-	int test = 0;
 	char line0[MAX_LINE_LENGTH];
-	char line1[MAX_LINE_LENGTH];
-	char line2[MAX_LINE_LENGTH];
-	char line3[MAX_LINE_LENGTH];
-	BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
-	BSP_LCD_SetBackColor(LCD_COLOR_BLACK);
+	//char line1[MAX_LINE_LENGTH];
+	//char line2[MAX_LINE_LENGTH];
+	//char line3[MAX_LINE_LENGTH];
 
   /* Infinite loop */
   for(;;)
   {
-	  HAL_Delay(100);
-	  BSP_GYRO_GetXYZ(gyroscope);
-	  test++;
+	  osDelay(33);
+	  RightYSpeed += AngleX / 25.0;
 
-	  sprintf(line0, "%d", test);
-	  sprintf(line1, "%.5f", gyroscope[0]);
-	  sprintf(line2, "%.5f", gyroscope[1]);
-	  sprintf(line3, "%.5f", gyroscope[2]);
+	  if(HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin))
+	  {
+		  AngleX = 0;
+		  AngleY = 0;
+		  AngleZ = 0;
+	  }
 
+	  sprintf(line0, "%d", score);
+	  //sprintf(line1, "%.5f", x_average);
+	  //sprintf(line2, "%.5f", y_average);
+	  //sprintf(line3, "%.5f", z_average);
 
+	  RightYPos += RightYSpeed;
+	  LeftYPos += LeftYSpeed;
+	  BallXPos += BallXSpeed;
+	  BallYPos += BallYSpeed;
+	  CheckForBoundaries();
+
+	  BSP_LCD_Clear(LCD_COLOR_BLACK);
 	  BSP_LCD_DisplayStringAtLine(0, line0);
-	  BSP_LCD_DisplayStringAtLine(1, line1);
-	  BSP_LCD_DisplayStringAtLine(2, line2);
-	  BSP_LCD_DisplayStringAtLine(3, line3);
-	  BSP_LCD_FillCircle(120, 160, 10);
+	  //BSP_LCD_DisplayStringAtLine(1, line1);
+	  //BSP_LCD_DisplayStringAtLine(2, line2);
+	  //BSP_LCD_DisplayStringAtLine(3, line3);
+	  BSP_LCD_FillCircle(BallXPos, BallYPos, BALL_DIAMETER);
+	  BSP_LCD_FillRect( LeftXPos, LeftYPos, 10, 50);
+	  BSP_LCD_FillRect( RightXPos, RightYPos, 10, 50);
   }
   /* USER CODE END 5 */
 }
