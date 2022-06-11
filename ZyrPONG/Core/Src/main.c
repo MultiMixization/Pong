@@ -89,7 +89,7 @@ float gyroscope[3] = {0};
 
 float x_average, y_average, z_average;
 
-float LeftXPos = 20, LeftYPos = 130, RightXPos = 210, RightYPos = 130, BallXPos = 100, BallYPos = 100;
+int LeftXPos = 20, LeftYPos = 130, RightXPos = 210, RightYPos = 130, BallXPos = 100, BallYPos = 100;
 
 float LeftXSpeed = 0, LeftYSpeed = 0, RightXSpeed = 0, RightYSpeed = 0, BallXSpeed = 1, BallYSpeed = 3;
 
@@ -185,9 +185,9 @@ int main(void)
   BSP_LCD_LayerDefaultInit(0, LCD_FRAME_BUFFER_LAYER0);	//Warstwa spodnia
   BSP_LCD_SelectLayer(0);
   BSP_LCD_DisplayOn();
-  BSP_LCD_Clear(LCD_COLOR_BLACK);
-  BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
-  BSP_LCD_SetBackColor(LCD_COLOR_BLACK);
+  BSP_LCD_Clear(LCD_COLOR_WHITE);
+  BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+  BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
 
   /* USER CODE END 2 */
 
@@ -209,7 +209,7 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 2048);
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityHigh, 0, 2048);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -763,9 +763,9 @@ void Rewrite_History()
 	y_history[10] = gyroscope[1];
 	z_history[10] = gyroscope[2];
 
-	x_average = (newx_average / 11.0) / 1000.0 - 3.0;
-	y_average = (newy_average / 11.0) / 1000.0 - 3.0;
-	z_average = (newz_average / 11.0) / 1000.0 - 3.0;
+	x_average = (newx_average / 11.0) / 1000.0 - 3.2;
+	y_average = (newy_average / 11.0) / 1000.0 - 3.2;
+	z_average = (newz_average / 11.0) / 1000.0 - 3.2;
 
 	AngleX += (x_average / 100.0);
 	AngleY += (y_average / 100.0);
@@ -812,7 +812,7 @@ void StartDataGathering(void const * argument)
 
 void StartEnemySteer(void const * argument)
 {
-	  pid_init(&pid, 1.0f, 1.0f, 1.0f, 10 , 8);
+	  pid_init(&pid, 1.0f, 1.0f, 1.0f, 10 , 10);
 
 	  pid.p_max = pid_scale(&pid, 5);
 	  pid.p_min = pid_scale(&pid, -5);
@@ -826,7 +826,7 @@ void StartEnemySteer(void const * argument)
 	while(1)
 	{
 		LeftYSpeed = pid_calc(&pid, LeftYPos, BallYPos - 25);
-		osDelay(8);
+		osDelay(10);
 	}
 }
 
@@ -837,6 +837,7 @@ void CheckForCollisions()
 	{
 		if(BallYPos <= LeftYPos + 50 && BallYPos >= LeftYPos)	//Front face
 		{
+			BallXSpeed *= 1.05;
 			if(BallXSpeed < 0)
 			{
 				BallXSpeed = -BallXSpeed;
@@ -844,6 +845,8 @@ void CheckForCollisions()
 		}
 		if(BallYPos <= LeftYPos && BallYPos > LeftYPos - BALL_DIAMETER)
 		{
+			BallXSpeed *= 1.05;
+			BallYSpeed -= (0.1 * fabs(LeftYSpeed));
 			if(BallXSpeed < 0)
 			{
 				BallXSpeed = -BallXSpeed;
@@ -859,11 +862,20 @@ void CheckForCollisions()
 		}
 		if(BallYPos >= LeftYPos + 50 && BallYPos < LeftYPos + 50 + BALL_DIAMETER)
 		{
+			BallXSpeed *= 1.05;
+			BallYSpeed += (0.1 * fabs(LeftYSpeed));
 			if(BallXSpeed < 0)
 			{
 				BallXSpeed = -BallXSpeed;
 			}
-			BallYSpeed = -BallYSpeed;
+			if(LeftYSpeed > 0 && BallYSpeed < 0)
+			{
+				BallYSpeed = - BallYSpeed;
+			}
+			if(LeftYSpeed < 0 && BallYSpeed > 0)
+			{
+				BallYSpeed = - BallYSpeed;
+			}
 		}
 	}
 
@@ -872,6 +884,7 @@ void CheckForCollisions()
 	{
 		if(BallYPos <= RightYPos + 50 && BallYPos >= RightYPos)	//Front face
 		{
+			BallXSpeed *= 1.05;
 			if(BallXSpeed > 0)
 			{
 				BallXSpeed = -BallXSpeed;
@@ -879,6 +892,8 @@ void CheckForCollisions()
 		}
 		if(BallYPos <= RightYPos && BallYPos > RightYPos - BALL_DIAMETER)
 		{
+			BallXSpeed *= 1.05;
+			BallYSpeed -= (0.1 * fabs(RightYSpeed));
 			if(BallXSpeed > 0)
 			{
 				BallXSpeed = -BallXSpeed;
@@ -894,11 +909,20 @@ void CheckForCollisions()
 		}
 		if(BallYPos >= RightYPos + 50 && BallYPos < RightYPos + 50 + BALL_DIAMETER)
 		{
+			BallXSpeed *= 1.05;
+			BallYSpeed += (0.1 * fabs(RightYSpeed));
 			if(BallXSpeed > 0)
 			{
 				BallXSpeed = -BallXSpeed;
 			}
-			BallYSpeed = -BallYSpeed;
+			if(RightYSpeed > 0 && BallYSpeed < 0)
+			{
+				BallYSpeed = - BallYSpeed;
+			}
+			if(RightYSpeed < 0 && BallYSpeed > 0)
+			{
+				BallYSpeed = - BallYSpeed;
+			}
 		}
 	}
 }
@@ -931,6 +955,7 @@ void CheckForBoundaries()
 	{
 		score++;
 		BallXSpeed = 2;
+		BallYSpeed = 2;
 		BallXPos = 120;
 		BallYPos = 160;
 	}
@@ -938,14 +963,20 @@ void CheckForBoundaries()
 	{
 		score--;
 		BallXSpeed = -2;
+		BallYSpeed = 2;
 		BallXPos = 120;
 		BallYPos = 160;
 	}
-	if(BallYPos <= BALL_DIAMETER || BallYPos >= 320 - BALL_DIAMETER)
+	if(BallYPos <= BALL_DIAMETER && BallYSpeed < 0)
 	{
 		BallYSpeed = -BallYSpeed;
+		BallYPos = BALL_DIAMETER;
 	}
-
+	if(BallYPos >= 320 - BALL_DIAMETER && BallYSpeed > 0)
+	{
+		BallYSpeed = -BallYSpeed;
+		BallYPos = 320 - BALL_DIAMETER;
+	}
 	CheckForCollisions();
 }
 
@@ -969,7 +1000,7 @@ void StartDefaultTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-	  osDelay(33);
+	  osDelay(30);
 	  RightYSpeed += AngleX / 50.0;
 
 	  if(HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin))
@@ -992,7 +1023,7 @@ void StartDefaultTask(void const * argument)
 	  BallYPos += BallYSpeed;
 	  CheckForBoundaries();
 
-	  BSP_LCD_Clear(LCD_COLOR_BLACK);
+	  BSP_LCD_Clear(LCD_COLOR_WHITE);
 	  BSP_LCD_DisplayStringAtLine(0, line0);
 	  //BSP_LCD_DisplayStringAtLine(1, line1);
 	  //BSP_LCD_DisplayStringAtLine(2, line2);

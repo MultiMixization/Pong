@@ -5,8 +5,8 @@
 ../Core/Src/main.c:738:6:HAL_LTDC_ReloadEventCallback	0	static
 ../Core/Src/main.c:743:6:Rewrite_History	56	static
 ../Core/Src/main.c:804:6:StartDataGathering	8	static
-../Core/Src/main.c:833:5:CheckForCollisions	0	static
-../Core/Src/main.c:913:6:CheckForBoundaries	0	static
-../Core/Src/main.c:968:6:StartDefaultTask	48	static
-../Core/Src/main.c:1023:6:HAL_TIM_PeriodElapsedCallback	0	static
-../Core/Src/main.c:1040:6:Error_Handler	0	static,ignoring_inline_asm
+../Core/Src/main.c:833:6:CheckForCollisions	48	static
+../Core/Src/main.c:930:6:CheckForBoundaries	0	static
+../Core/Src/main.c:985:6:StartDefaultTask	32	static
+../Core/Src/main.c:1040:6:HAL_TIM_PeriodElapsedCallback	0	static
+../Core/Src/main.c:1057:6:Error_Handler	0	static,ignoring_inline_asm
